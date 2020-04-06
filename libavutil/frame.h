@@ -563,6 +563,8 @@ typedef struct AVFrame {
     /**
      * @}
      */
+
+    uint32_t avtech_timestamp;
 } AVFrame;
 
 /**

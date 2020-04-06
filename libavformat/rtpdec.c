@@ -608,6 +608,32 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
                    s->base_timestamp;
 }
 
+static int handle_extension_header(const uint8_t *buf, int size) {
+    int i = 0;
+    while (1) {
+        if (i >= size - 4) {
+            break;
+        }
+
+        uint32_t nSCode = AV_RB32(buf + i);
+        if ((nSCode & 0xFFFF0000) == 0xFFFE0000) {
+            int nExRtpIdLen = nSCode & 0xFFFF;
+            uint16_t nExRtpId = AV_RB16(buf + i + 4);
+            if (nExRtpId == 0x0F23) {
+                int playback_status = AV_RB32(buf + i + 6);
+                int playback_time = AV_RB32(buf + i + 10);
+                return playback_time;
+            }
+
+            i = i + 2 + nExRtpIdLen;
+        } else {
+            break;
+        }
+    }
+
+    return 0;
+}
+
 static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
                                      const uint8_t *buf, int len)
 {
@@ -658,6 +684,7 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         return AVERROR_INVALIDDATA;
 
     /* RFC 3550 Section 5.3.1 RTP Header Extension handling */
+    int avtech_playback_time = 0;
     if (ext) {
         if (len < 4)
             return -1;
@@ -667,7 +694,8 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
 
         if (len < ext)
             return -1;
-        // skip past RTP header extension
+
+        avtech_playback_time = handle_extension_header(buf + 4, ext - 4);
         len -= ext;
         buf += ext;
     }
@@ -687,6 +715,7 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
 
     // now perform timestamp things....
     finalize_packet(s, pkt, timestamp);
+    pkt->avtech_timestamp = avtech_playback_time;
 
     return rv;
 }

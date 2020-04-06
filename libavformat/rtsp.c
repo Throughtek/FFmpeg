@@ -64,7 +64,7 @@
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 
 #define RTSP_FLAG_OPTS(name, longname) \
-    { name, longname, OFFSET(rtsp_flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, DEC, "rtsp_flags" }, \
+    { name, longname, OFFSET(rtsp_flags), AV_OPT_TYPE_FLAGS, {.i64 = RTSP_FLAG_PREFER_TCP}, INT_MIN, INT_MAX, DEC, "rtsp_flags" }, \
     { "filter_src", "only receive packets from the negotiated peer IP", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_FILTER_SRC}, 0, 0, DEC, "rtsp_flags" }
 
 #define RTSP_MEDIATYPE_OPTS(name, longname) \
@@ -97,6 +97,7 @@ const AVOption ff_rtsp_options[] = {
     { "stimeout", "set timeout (in microseconds) of socket TCP I/O operations", OFFSET(stimeout), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC },
     COMMON_OPTS(),
     { "user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT}, 0, 0, DEC },
+    { "avtech_seek",  "enable avtech seek", OFFSET(avtech_seek), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
     { NULL },
 };
 
@@ -1166,6 +1167,14 @@ start:
             av_log(s, AV_LOG_TRACE, "ret=%d c=%02x [%c]\n", ret, ch, ch);
             if (ret != 1)
                 return AVERROR_EOF;
+
+            //
+            // <HACK>: workaround for avtech rtsp server sending '\0' to keep alive
+            //
+            if (ch == 0) {
+                continue;
+            }
+
             if (ch == '\n')
                 break;
             if (ch == '$' && q == buf) {

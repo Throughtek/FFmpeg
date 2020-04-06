@@ -1937,6 +1937,27 @@ static int compare_ts_with_wrapdetect(int64_t ts_a, struct playlist *pls_a,
     return av_compare_mod(scaled_ts_a, scaled_ts_b, 1LL << 33);
 }
 
+static void reset(AVFormatContext *s)
+{
+    HLSContext *c = s->priv_data;
+
+    for (int i = 0; i < c->n_playlists; i++) {
+        /* Reset reading */
+        struct playlist *pls = c->playlists[i];
+        if (pls->input)
+            ff_format_io_close(pls->parent, &pls->input);
+        av_packet_unref(&pls->pkt);
+        reset_packet(&pls->pkt);
+        pls->pb.eof_reached = 0;
+        /* Clear any buffered data */
+        pls->pb.buf_end = pls->pb.buf_ptr = pls->pb.buffer;
+        /* Reset the pos, to let the mpegts demuxer know we've seeked. */
+        pls->pb.pos = 0;
+        /* Flush the packet queue of the subdemuxer. */
+        ff_read_frame_flush(pls->ctx);
+    }
+}
+
 static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *c = s->priv_data;
@@ -1949,11 +1970,13 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         struct playlist *pls = c->playlists[i];
         /* Make sure we've got one buffered packet from each open playlist
          * stream */
+        int last_keyframe_pos = -1;
         if (pls->needed && !pls->pkt.data) {
             while (1) {
                 int64_t pkt_ts;
                 int64_t ts_diff;
                 AVRational tb;
+                int pos = avio_tell(&pls->pb);
                 ret = av_read_frame(pls->ctx, &pls->pkt);
                 if (ret < 0) {
                     if (!avio_feof(&pls->pb) && ret != AVERROR_EOF)
@@ -1995,11 +2018,20 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                                             tb.den, AV_ROUND_DOWN) -
                             pls->seek_timestamp;
 
-                    if (ts_diff >= 0 && (pls->seek_flags  & AVSEEK_FLAG_ANY ||
-                                        pls->pkt.flags & AV_PKT_FLAG_KEY)) {
+                    /* {@ FIXME: find a way to seek in hls **/ 
+                    if (pos == last_keyframe_pos) {
                         pls->seek_timestamp = AV_NOPTS_VALUE;
                         break;
                     }
+
+                    if (pls->pkt.flags & AV_PKT_FLAG_KEY && ts_diff <= 0 && pos > last_keyframe_pos) {
+                        last_keyframe_pos = pos;
+                    }
+
+                    if (ts_diff >= 0) {
+                        reset(s);
+                    }
+                    /* @} **/
                 }
                 av_packet_unref(&pls->pkt);
                 reset_packet(&pls->pkt);

@@ -4,6 +4,8 @@ FFmpeg README
 FFmpeg is a collection of libraries and tools to process multimedia content
 such as audio, video, subtitles and related metadata.
 
+This ffmpeg git contains TUTK added kalay record format demuxer.
+
 ## Libraries
 
 * `libavcodec` provides implementation of a wider range of codecs.

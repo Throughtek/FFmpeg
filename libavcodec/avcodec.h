@@ -1706,6 +1706,7 @@ typedef struct AVPacket {
      */
     attribute_deprecated
     int64_t convergence_duration;
+    uint32_t avtech_timestamp;
 #endif
 } AVPacket;
 #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
@@ -3703,6 +3704,7 @@ typedef struct AVCodecContext {
      * (with the display dimensions being determined by the crop_* fields).
      */
     int apply_cropping;
+    int disable_multithread_delaying;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

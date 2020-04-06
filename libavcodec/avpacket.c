@@ -46,6 +46,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     pkt->buf                  = NULL;
     pkt->side_data            = NULL;
     pkt->side_data_elems      = 0;
+    pkt->avtech_timestamp     = 0;
 }
 
 AVPacket *av_packet_alloc(void)
@@ -598,6 +599,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     dst->flags                = src->flags;
     dst->stream_index         = src->stream_index;
+    dst->avtech_timestamp     = src->avtech_timestamp;
 
     for (i = 0; i < src->side_data_elems; i++) {
          enum AVPacketSideDataType type = src->side_data[i].type;

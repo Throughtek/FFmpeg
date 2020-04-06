@@ -332,6 +332,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->colorspace             = src->colorspace;
     dst->color_range            = src->color_range;
     dst->chroma_location        = src->chroma_location;
+    dst->avtech_timestamp        = src->avtech_timestamp;
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 

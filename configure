@@ -6070,7 +6070,8 @@ enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
 enabled omx               && require_header OMX_Core.h
-enabled openssl           && { use_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
+enabled openssl           && { enable SSL_library_init && enable_safe openssl/ssl.h ||
+                               use_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                use_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||

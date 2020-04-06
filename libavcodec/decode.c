@@ -1503,6 +1503,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         frame->pkt_pos      = pkt->pos;
         frame->pkt_duration = pkt->duration;
         frame->pkt_size     = pkt->size;
+        frame->avtech_timestamp = pkt->avtech_timestamp;
 
         for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
             int size;

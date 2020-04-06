@@ -1463,6 +1463,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         out_pkt.pts          = st->parser->pts;
         out_pkt.dts          = st->parser->dts;
         out_pkt.pos          = st->parser->pos;
+        out_pkt.avtech_timestamp = pkt->avtech_timestamp;
 
         if (st->need_parsing == AVSTREAM_PARSE_FULL_RAW)
             out_pkt.pos = st->parser->frame_offset;

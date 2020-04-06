@@ -925,6 +925,36 @@ retry:
     return 0;
 }
 
+static int avtech_seek(AVFormatContext *s, int stream_index, int64_t timestamp) {
+    RTSPState *rt = s->priv_data;
+    RTSPMessageHeader reply1, *reply = &reply1;
+
+    int64_t timestamp_in_seconds = timestamp / 1000000;
+    struct tm *local = gmtime(&timestamp_in_seconds);
+
+    const char *hdr = "Content-type: text/parameters\r\n";
+    char cmd[1024];
+    int year = local->tm_year + 1900;
+    int month = local->tm_mon + 1;
+
+    sprintf(cmd, "playback_ctrl: seek\nyear:%d\nmonth:%d\nday:%d\nhour:%d\nmin:%d\nsec:%d\n",
+        year, month, local->tm_mday, local->tm_hour, local->tm_min, local->tm_sec);
+    ff_rtsp_send_cmd_with_content(s, "SET_PARAMETER", rt->control_uri,
+                        hdr, reply, NULL, cmd, strlen(cmd));
+    if (reply->status_code != RTSP_STATUS_OK) {
+        return ff_rtsp_averror(reply->status_code, -1);
+    }
+
+    sprintf(cmd, "playback_ctrl: play\n");
+    ff_rtsp_send_cmd_with_content(s, "SET_PARAMETER", rt->control_uri,
+                        hdr, reply, NULL, cmd, strlen(cmd));
+    if (reply->status_code != RTSP_STATUS_OK) {
+        return ff_rtsp_averror(reply->status_code, -1);
+    }
+
+    return 0;
+}
+
 static int rtsp_read_seek(AVFormatContext *s, int stream_index,
                           int64_t timestamp, int flags)
 {
@@ -939,6 +969,10 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
     case RTSP_STATE_IDLE:
         break;
     case RTSP_STATE_STREAMING:
+        if (rt->avtech_seek) {
+            return avtech_seek(s, stream_index, rt->seek_timestamp);
+        }
+
         if ((ret = rtsp_read_pause(s)) != 0)
             return ret;
         rt->state = RTSP_STATE_SEEKING;
