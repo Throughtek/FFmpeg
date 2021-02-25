@@ -7,7 +7,8 @@
 
 #include "AVFRAMEINFO.h"
 
-#define MAX_PROBE_FRAME 50
+#define MAX_PROBE_AUDIO_FRAME 500
+#define MAX_PROBE_VIDEO_FRAME 50
 
 typedef struct AvapiContext {
     const AVClass *class;
@@ -18,6 +19,9 @@ typedef struct AvapiContext {
     int video_stream_index;
     int audio_stream_index;
     int stream_index;
+    int video_frame_size;
+    FRAMEINFO_t video_info;
+    char *video_frame;
 } AvapiContext;
 
 static int avapi_probe(AVProbeData *p) {
@@ -124,6 +128,10 @@ static void set_audio_codec(AvapiContext *ctx, AVStream *st)
             break;
         case MEDIA_CODEC_AUDIO_G726:
             st->codecpar->codec_id = AV_CODEC_ID_ADPCM_G726;
+            //
+            // <HACK> workaround for avapi frame info bits per sample can only be 8 or 16
+            //
+            st->codecpar->bits_per_coded_sample = 2;
             break;
         default:
             break;
@@ -136,20 +144,22 @@ static int avapi_read_header(AVFormatContext *s)
     int ret = 0;
     int video_stream_created = 0;
     int audio_stream_created = 0;
-    int frame_count = 0;
+    int audio_frame_count = 0;
+    int video_frame_count = 0;
     int size;
     FRAMEINFO_t info;
     AVStream *st;
 
     ctx->stream_index = 0;
 
-    while ((!audio_stream_created || !video_stream_created) && frame_count < MAX_PROBE_FRAME)
+    while ((!audio_stream_created || !video_stream_created) && audio_frame_count < MAX_PROBE_AUDIO_FRAME && video_frame_count < MAX_PROBE_VIDEO_FRAME)
     {
         size = avio_rl32(s->pb);
         avio_read(s->pb, (char *)&info, sizeof(FRAMEINFO_t));
-        avio_skip(s->pb, size);
 
         if (info.codec_id >= MEDIA_CODEC_AUDIO_AAC_RAW) {
+            audio_frame_count++;
+            avio_skip(s->pb, size);
             if (!audio_stream_created) {
                 ctx->audio_codec_id = info.codec_id;
                 ctx->audio_flag = info.flags;
@@ -166,7 +176,13 @@ static int avapi_read_header(AVFormatContext *s)
                 audio_stream_created = 1;
             }
         } else {
+            video_frame_count++;
             if (!video_stream_created) {
+                ctx->video_frame_size = size;
+                ctx->video_info = info;
+                ctx->video_frame = (char *)malloc(size);
+                avio_read(s->pb, ctx->video_frame, size);
+
                 ctx->video_codec_id = info.codec_id;
                 ctx->video_flag = info.flags;
 
@@ -180,10 +196,10 @@ static int avapi_read_header(AVFormatContext *s)
                 avpriv_set_pts_info(st, 64, 1, 1000);
                 ctx->video_stream_index = ctx->stream_index++;
                 video_stream_created = 1;
+            } else {
+                avio_skip(s->pb, size);
             }
         }
-
-        frame_count++;
     }
 
     return ret;
@@ -196,6 +212,24 @@ static int avapi_read_packet(AVFormatContext *s, AVPacket *pkt)
     int size;
     int stream_index;
     FRAMEINFO_t info;
+
+    if (ctx->video_frame_size) {
+        size = ctx->video_frame_size;
+        if (av_new_packet(pkt, size) < 0) {
+            return AVERROR(ENOMEM);
+        }
+        ctx->video_frame_size = 0;
+        pkt->pos= 0;
+        pkt->stream_index = ctx->video_stream_index;
+        pkt->dts = pkt->pts = ctx->video_info.timestamp;
+        if (ctx->video_info.flags & IPC_FRAME_FLAG_IFRAME) {
+            pkt->flags |= AV_PKT_FLAG_KEY;
+        }
+        memcpy(pkt->data, ctx->video_frame, size);
+        av_shrink_packet(pkt, size);
+        free(ctx->video_frame);
+        return size;
+    }
 
     if (avio_feof(s->pb)) {
         return AVERROR_EOF;

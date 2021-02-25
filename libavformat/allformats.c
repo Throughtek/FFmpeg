@@ -190,6 +190,7 @@ static void register_all(void)
     REGISTER_MUXDEMUX(MMF,              mmf);
     REGISTER_MUXDEMUX(MOV,              mov);
     REGISTER_DEMUXER (MOV,              avapi);
+    REGISTER_DEMUXER (MOV,              webrtc);
     REGISTER_DEMUXER (MOV,              krf);
     REGISTER_MUXER   (MP2,              mp2);
     REGISTER_MUXDEMUX(MP3,              mp3);

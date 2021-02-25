@@ -12,7 +12,7 @@
 #define _AVFRAME_INFO_H_
 
 /* CODEC ID */
-typedef enum 
+typedef enum
 {
 	MEDIA_CODEC_UNKNOWN			= 0x00,
 	MEDIA_CODEC_VIDEO_MPEG4		= 0x4C,
@@ -20,23 +20,33 @@ typedef enum
 	MEDIA_CODEC_VIDEO_H264		= 0x4E,
 	MEDIA_CODEC_VIDEO_MJPEG		= 0x4F,
 	MEDIA_CODEC_VIDEO_HEVC      = 0x50,
+	MEDIA_CODEC_VIDEO_VP8		= 0x51,
+	MEDIA_CODEC_VIDEO_VP9		= 0x52,
+	MEDIA_CODEC_VIDEO_AV1		= 0x53,
 
     MEDIA_CODEC_AUDIO_AAC_RAW   = 0x86,   // 2017-05-04 add AAC Raw data audio codec definition
     MEDIA_CODEC_AUDIO_AAC_ADTS  = 0x87,   // 2017-05-04 add AAC ADTS audio codec definition
     MEDIA_CODEC_AUDIO_AAC_LATM  = 0x88,   // 2017-05-04 add AAC LATM audio codec definition
     MEDIA_CODEC_AUDIO_AAC       = 0x88,   // 2014-07-02 add AAC LATM audio codec definition
     MEDIA_CODEC_AUDIO_G711U     = 0x89,   //g711 u-law
-    MEDIA_CODEC_AUDIO_G711A     = 0x8A,   //g711 a-law	
+    MEDIA_CODEC_AUDIO_G711A     = 0x8A,   //g711 a-law
     MEDIA_CODEC_AUDIO_ADPCM     = 0X8B,
 	MEDIA_CODEC_AUDIO_PCM		= 0x8C,
 	MEDIA_CODEC_AUDIO_SPEEX		= 0x8D,
 	MEDIA_CODEC_AUDIO_MP3		= 0x8E,
     MEDIA_CODEC_AUDIO_G726      = 0x8F,
-
+	MEDIA_CODEC_AUDIO_OPUS		= 0x90,
+	MEDIA_CODEC_AUDIO_PCMU		= 0x91,
+	MEDIA_CODEC_AUDIO_PCMA		= 0x92,
+	MEDIA_CODEC_AUDIO_L16		= 0x93,
+	MEDIA_CODEC_AUDIO_ILBC		= 0x94,
+	MEDIA_CODEC_AUDIO_ISAC		= 0x95,
+	MEDIA_CODEC_AUDIO_CN		= 0x96,
+	MEDIA_CODEC_AUDIO_G722		= 0x97
 }ENUM_CODECID;
 
 /* FRAME Flag */
-typedef enum 
+typedef enum
 {
 	IPC_FRAME_FLAG_PBFRAME	= 0x00,	// A/V P/B frame..
 	IPC_FRAME_FLAG_IFRAME	= 0x01,	// A/V I frame.
@@ -74,6 +84,7 @@ typedef enum
 /* Audio/Video Frame Header Info */
 typedef struct _FRAMEINFO
 {
+
 	unsigned short codec_id;	// Media codec type defined in sys_mmdef.h,
 								// MEDIA_CODEC_AUDIO_PCMLE16 for audio,
 								// MEDIA_CODEC_VIDEO_H264 for video.
@@ -89,7 +100,7 @@ typedef struct _FRAMEINFO
 
     // unsigned int videoWidth;
     // unsigned int videoHeight;
-    
+
 }FRAMEINFO_t;
 #endif
 

@@ -1707,6 +1707,7 @@ typedef struct AVPacket {
     attribute_deprecated
     int64_t convergence_duration;
     uint32_t avtech_timestamp;
+    uint32_t avtech_playback_status;
 #endif
 } AVPacket;
 #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe

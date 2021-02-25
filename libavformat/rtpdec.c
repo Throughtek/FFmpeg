@@ -31,6 +31,11 @@
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 
+typedef struct AVTechInfo{
+    int playback_status;
+    int playback_time;
+} AVTechInfo;
+
 #define MIN_FEEDBACK_INTERVAL 200000 /* 200 ms in us */
 
 static RTPDynamicProtocolHandler l24_dynamic_handler = {
@@ -608,7 +613,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
                    s->base_timestamp;
 }
 
-static int handle_extension_header(const uint8_t *buf, int size) {
+static void handle_extension_header(const uint8_t *buf, int size, AVTechInfo *info) {
     int i = 0;
     while (1) {
         if (i >= size - 4) {
@@ -620,9 +625,8 @@ static int handle_extension_header(const uint8_t *buf, int size) {
             int nExRtpIdLen = nSCode & 0xFFFF;
             uint16_t nExRtpId = AV_RB16(buf + i + 4);
             if (nExRtpId == 0x0F23) {
-                int playback_status = AV_RB32(buf + i + 6);
-                int playback_time = AV_RB32(buf + i + 10);
-                return playback_time;
+                info->playback_status = AV_RB32(buf + i + 6);
+                info->playback_time = AV_RB32(buf + i + 10);
             }
 
             i = i + 2 + nExRtpIdLen;
@@ -630,8 +634,6 @@ static int handle_extension_header(const uint8_t *buf, int size) {
             break;
         }
     }
-
-    return 0;
 }
 
 static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
@@ -684,7 +686,9 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         return AVERROR_INVALIDDATA;
 
     /* RFC 3550 Section 5.3.1 RTP Header Extension handling */
-    int avtech_playback_time = 0;
+    AVTechInfo info;
+    memset(&info, 0, sizeof(AVTechInfo));
+
     if (ext) {
         if (len < 4)
             return -1;
@@ -695,7 +699,7 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         if (len < ext)
             return -1;
 
-        avtech_playback_time = handle_extension_header(buf + 4, ext - 4);
+        handle_extension_header(buf + 4, ext - 4, &info);
         len -= ext;
         buf += ext;
     }
@@ -715,7 +719,8 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
 
     // now perform timestamp things....
     finalize_packet(s, pkt, timestamp);
-    pkt->avtech_timestamp = avtech_playback_time;
+    pkt->avtech_timestamp = info.playback_time;
+    pkt->avtech_playback_status = info.playback_status;
 
     return rv;
 }

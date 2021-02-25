@@ -297,7 +297,7 @@ OBJS-$(CONFIG_MLV_DEMUXER)               += mlvdec.o riffdec.o
 OBJS-$(CONFIG_MM_DEMUXER)                += mm.o
 OBJS-$(CONFIG_MMF_DEMUXER)               += mmf.o
 OBJS-$(CONFIG_MMF_MUXER)                 += mmf.o rawenc.o
-OBJS-$(CONFIG_MOV_DEMUXER)               += avapidec.o krfdec.o mov.o mov_chan.o replaygain.o
+OBJS-$(CONFIG_MOV_DEMUXER)               += webrtcdec.o avapidec.o krfdec.o mov.o mov_chan.o replaygain.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o avc.o hevc.o vpcc.o \
                                             movenchint.o mov_chan.o rtp.o \
                                             movenccenc.o rawutils.o
@@ -600,6 +600,7 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_UDPLITE_PROTOCOL)          += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
 OBJS-$(CONFIG_HTTP_PROTOCOL)             += avapi.o
+OBJS-$(CONFIG_HTTP_PROTOCOL)             += webrtc.o
 
 # libavdevice dependencies
 OBJS-$(CONFIG_IEC61883_INDEV)            += dv.o

@@ -704,9 +704,9 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
         *q = '\0';
         sdp_parse_line(s, s1, letter, buf);
     next_line:
-        while (*p != '\n' && *p != '\0')
+        while (*p != '\n' && *p != '\r' && *p != '\0')
             p++;
-        if (*p == '\n')
+        if (*p == '\n' || *p == '\r')
             p++;
     }
 
